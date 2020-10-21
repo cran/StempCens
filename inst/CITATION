@@ -1,0 +1,16 @@
+citHeader("To cite StempCens in publications use:")
+
+citEntry(
+  entry    = "Manual",
+  title    = "StempCens: Spatio-temporal estimation and prediction for censored/missing responses",
+  author   = personList(as.person("Katherine L. Valeriano"),
+                   as.person("Victor H. Lachos"),
+                   as.person("Larissa A. Matos")),
+  year     = "2020",
+  note     = "R package version 1.1.0",
+  url      = "https://CRAN.R-project.org/package=StempCens",
+
+  textVersion =
+  paste("Valeriano K, Lachos VH and Matos L (2020).", "StempCens: Spatio-temporal estimation and prediction for censored/missing responses.", "R package version 1.1.0.", "<URL: https://CRAN.R-project.org/package=StempCens >."
+  )
+)

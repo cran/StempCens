@@ -4,69 +4,90 @@
 \alias{EstStempCens}
 \title{ML estimation in spatio-temporal model with censored/missing responses}
 \usage{
-EstStempCens(y, x, cc, tempo, coord, inits.phi, inits.rho, inits.tau2,
-  tau2.fixo = FALSE, type.Data = "balanced", cens.type = "left",
-  method = "nlminb", kappa = 0, type.S = "exponential",
-  IMatrix = TRUE, lower.lim = c(0.01, -0.99, 0.01), upper.lim = c(30,
-  0.99, 20), M = 20, perc = 0.25, MaxIter = 300, pc = 0.2,
-  error = 10^-6)
+EstStempCens(
+  y,
+  x,
+  cc,
+  time,
+  coord,
+  LI,
+  LS,
+  init.phi,
+  init.rho,
+  init.tau2,
+  tau2.fixo = FALSE,
+  type.Data = "balanced",
+  method = "nlminb",
+  kappa = 0,
+  type.S = "exponential",
+  IMatrix = TRUE,
+  lower.lim = c(0.01, -0.99, 0.01),
+  upper.lim = c(30, 0.99, 20),
+  M = 20,
+  perc = 0.25,
+  MaxIter = 300,
+  pc = 0.2,
+  error = 1e-06
+)
 }
 \arguments{
 \item{y}{a vector of responses.}
 
 \item{x}{a matrix or vector of covariates.}
 
-\item{cc}{a vector of censoring indicators. For each observation: 1 if censored/missing and 0 if non-censored/non-missing.}
+\item{cc}{a vector of censoring indicators. For each observation: \code{1} if censored/missing and \code{0} if non-censored/non-missing.}
 
-\item{tempo}{a vector of time.}
+\item{time}{a vector of time.}
 
 \item{coord}{a matrix of coordinates of the spatial locations.}
 
-\item{inits.phi}{initial value of the spatial scaling parameter.}
+\item{LI}{lower limit of detection. For each observation: if non-censored/non-missing \code{=y}, if left-censored/missing \code{=-Inf} or \code{=LOD} if right/interval-censored.}
 
-\item{inits.rho}{initial value of the time scaling parameter.}
+\item{LS}{upper limit of detection. For each observation: if non-censored/non-missing \code{=y}, if right-censored/missing \code{=Inf} or \code{=LOD} if left/interval-censored.}
 
-\item{inits.tau2}{initial value of the the nugget effect parameter.}
+\item{init.phi}{initial value of the spatial scaling parameter.}
+
+\item{init.rho}{initial value of the time scaling parameter.}
+
+\item{init.tau2}{initial value of the the nugget effect parameter.}
 
 \item{tau2.fixo}{\code{TRUE} or \code{FALSE}. Indicate if the nugget effect (\eqn{\tau^2}) parameter must be fixed.
 By default = \code{FALSE}.}
 
 \item{type.Data}{type of the data: '\code{balanced}' for balanced data and '\code{unbalanced}' for unbalanced data. By default = \code{balanced}.}
 
-\item{cens.type}{type of censoring: '\code{left}' for left censoring, '\code{right}' for rigth censoring and '\code{missing}' for missing response.
-By default = \code{left}.}
-
 \item{method}{optimization method used to estimate (\eqn{\phi}, \eqn{\rho} and \eqn{\tau^2}):
 '\code{optim}' for the function \code{\link[stats]{optim}} and '\code{nlminb}' for the function \code{\link[stats]{nlminb}}.
 By default = \code{nlminb}.}
 
-\item{kappa}{parameter for all spatial covariance functions. In the case of exponential, gaussian and spherical function \eqn{\kappa} is equal to zero.}
+\item{kappa}{parameter for all spatial covariance functions. In the case of exponential, gaussian and spherical function \eqn{\kappa} is equal to zero.
+For the power exponential function \eqn{\kappa} is a number between 0 and 2. For the matern correlation function is upper than 0.}
 
-\item{type.S}{type of spatial covariance function: '\code{exponential}' for exponential, '\code{gaussian}' for gaussian,
+\item{type.S}{type of spatial correlation function: '\code{exponential}' for exponential, '\code{gaussian}' for gaussian,
 '\code{matern}' for matern, '\code{pow.exp}' for power exponential and '\code{spherical}' for spherical function, respectively.
 Default is \code{exponential} function.}
 
 \item{IMatrix}{\code{TRUE} or \code{FALSE}. Indicate if the observed information matrix will be computed. By default = \code{TRUE}.}
 
 \item{lower.lim, upper.lim}{vectors of lower and upper bounds for the optimization method.
-If unspecified, the default is \code{c(0.01,-0.99,0.01)} for the lower bound and \code{c(30,0.99,20)} for the upper bound.}
+If unspecified, the default is \code{c(0.01,-0.99,0.01)} for the lower bound and \code{c(30,0.99,20)} for the upper bound if tau2.fixo=\code{FALSE}.}
 
-\item{M}{number of Monte Carlo samples for stochastic aproximation. By default = 20.}
+\item{M}{number of Monte Carlo samples for stochastic approximation. By default = \code{20}.}
 
-\item{perc}{percentage of burn-in on the Monte Carlo sample. By default = 0.25.}
+\item{perc}{percentage of burn-in on the Monte Carlo sample. By default = \code{0.25}.}
 
-\item{MaxIter}{the maximum number of iterations of the SAEM algorithm. By default = 300.}
+\item{MaxIter}{the maximum number of iterations of the SAEM algorithm. By default = \code{300}.}
 
-\item{pc}{percentage of iterations of the SAEM algorithm with no memory.  By default = 0.2}
+\item{pc}{percentage of iterations of the SAEM algorithm with no memory. By default = \code{0.20}.}
 
-\item{error}{the convergence maximum error. By default = 10^-6.}
+\item{error}{the convergence maximum error. By default = \code{1e-6}.}
 }
 \value{
 The function returns an object of class \code{Est.StempCens} which is a list given by:
 
 \describe{
-  \item{data.model}{Returns a list with all data components given in input.}
-  \item{results.model}{A list given by:}
+  \item{\code{m.data}}{Returns a list with all data components given in input.}
+  \item{\code{m.results}}{A list given by:}
 }
   \item{theta}{final estimation of \eqn{\theta = (\beta, \sigma^2, \tau^2, \phi, \rho)}.}
   \item{Theta}{estimated parameters in all iterations, \eqn{\theta = (\beta, \sigma^2, \tau^2, \phi, \rho)}.}
@@ -75,7 +96,8 @@ The function returns an object of class \code{Est.StempCens} which is a list giv
   \item{tau2}{estimated \eqn{\tau^2}.}
   \item{phi}{estimated \eqn{\phi}.}
   \item{rho}{estimated \eqn{\rho}.}
-  \item{PsiInv}{estimated \eqn{\Psi^-1}.}
+  \item{Eff.range}{estimated effective range.}
+  \item{PsiInv}{estimated \eqn{\Psi^-1}, where \eqn{\Psi=\Sigma/\sigma^2}.}
   \item{Cov}{estimated \eqn{\Sigma}.}
   \item{SAEMy}{stochastic approximation of the first moment for the truncated normal distribution.}
   \item{SAEMyy}{stochastic approximation of the second moment for the truncated normal distribution.}
@@ -90,116 +112,83 @@ The function returns an object of class \code{Est.StempCens} which is a list giv
 \description{
 Return the maximum likelihood estimates of the unknown parameters of spatio-temporal model with censored/missing responses.
 The estimates are obtained using SAEM algorithm.
-Also, the function computes the observed information matrix using the method developed by Thomas (1982).
-The types of censoring considered are left, right or missing values.
+The function also computes the observed information matrix using the method developed by \insertCite{louis1982finding;textual}{StempCens}.
+The types of censoring considered are left, right, interval or missing values.
 }
 \details{
 The spatio-temporal Gaussian model is giving by:
 
-\eqn{ Y(s_{i},t_{j})= \mu(s_{i},t_{j})+ Z(s_{i},t_{j}) +  \epsilon(s_{i},t_{j}),}
+\eqn{ Y(s_i,t_j)= \mu(s_i,t_j)+ Z(s_i,t_j) +  \epsilon(s_i,t_j),}
 
-where, the deterministic term \eqn{\mu(s_{i},t_{j})} and the stochastic terms \eqn{Z(s_{i},t_{j})},
-\eqn{\epsilon(s_{i},t_{j})} can depend on the observed spatio-temporal index for \eqn{Y(s_{i},t_{j})}.
-We assume \eqn{Z} is normally distributed with zero-mean and covariance matrix \eqn{\Sigma_z = \sigma^2 \Omega_{\phi\rho}(s,t)}
-where \eqn{\sigma^2} is the model variance, \eqn{\phi} and \eqn{\rho} are the spatial and time scaling parameters;
-\eqn{\epsilon(s_i,t_j)} is an independent and identically distributed measurement error with
-\eqn{E[\epsilon(s_i,t_j)]=0}, variance function \eqn{Var[\epsilon(s_i,t_j)]=\tau^2} (the nugget effect) and
-\eqn{Cov[\epsilon(s_i,t_j), \epsilon(s_k,t_l)]=0} \eqn{for all s_i =! s_k} and \eqn{t_j =! t_l}.
+where the deterministic term \eqn{\mu(s_i,t_j)} and the stochastic terms \eqn{Z(s_i,t_j)},
+\eqn{\epsilon(s_i,t_j)} can depend on the observed spatio-temporal indexes for \eqn{Y(s_i,t_j)}.
+We assume \eqn{Z} is normally distributed with zero-mean and covariance matrix \eqn{\Sigma_z = \sigma^2 \Omega_{\phi\rho}},
+where \eqn{\sigma^2} is the partial sill, \eqn{\Omega_{\phi\rho}} is the spatio-temporal correlation matrix,\eqn{\phi}
+and \eqn{\rho} are the spatial and time scaling parameters; \eqn{\epsilon(s_i,t_j)} is an independent and
+identically distributed measurement error with \eqn{E[\epsilon(s_i,t_j)]=0}, variance
+\eqn{Var[\epsilon(s_i,t_j)]=\tau^2} (the nugget effect) and \eqn{Cov[\epsilon(s_i,t_j), \epsilon(s_k,t_l)]=0}
+for all \eqn{s_i =! s_k} or \eqn{t_j =! t_l}.
 
 In particular, we define \eqn{\mu(s_i,t_j)}, the mean of the stochastic process as
 
 \eqn{\mu(s_i,t_j)=\sum_{k=1}^{p} x_k(s_i,t_j)\beta_k,}
 
 where \eqn{x_1(s_i,t_j),..., x_p(s_i,t_j)} are known functions of \eqn{(s_i,t_j)}, and \eqn{\beta_1,...,\beta_p}
-are unknown parameters to be estimated. Equivalently, in matrix notation, we have our spatio-temporal linear model as follows:
+are unknown parameters to be estimated. Equivalently, in matrix notation, we have the spatio-temporal linear model as follows:
 
 \eqn{Y = X \beta + Z + \epsilon,}
 
 \eqn{Z ~ N(0,\sigma^2 \Omega_{\phi\rho}),}
 
-\eqn{\epsilon ~ N(0,\tau^2 I).}
+\eqn{\epsilon ~ N(0,\tau^2 I_m).}
 
 Therefore the spatio-temporal process, \eqn{Y}, has normal distribution with mean \eqn{E[Y]=X\beta} and
-variance \eqn{\Sigma=\sigma^2\Omega_{\phi\rho}+\tau^2 I_m}. We assume that \eqn{\Sigma} is non-singular, and \eqn{X} has full rank.
-Using standard geostatistical terms, \eqn{\tau^2} is the nugget effect (or the measurement error variance), \eqn{\sigma^2} the sill, and
-\eqn{\Omega_{\phi\rho}=[r_{ij}]} is the \eqn{m x m} spatio-temporal correlation matrix with diagonal elements
-\eqn{r_{ii}=1}, for \eqn{i=1,...,m}.
+variance \eqn{\Sigma=\sigma^2\Omega_{\phi\rho}+\tau^2 I_m}. We assume that \eqn{\Sigma} is non-singular
+and \eqn{X} has full rank.
 
-The estimation process was computed via SAEM algorithm initially proposed by Deylon et. al.(1999).
+The estimation process was computed via SAEM algorithm initially proposed by \insertCite{delyon1999convergence;textual}{StempCens}.
 }
 \examples{
-# Initial parameter values
-beta <- c(-1,1.50); phi <- 5; rho <- 0.45; tau2 <- 0.80; sigma2 <- 1.5
+\dontrun{
 # Simulating data
-n1 <- 9    # Number of spatial locations
-n2 <- 4    # Number of temporal index
-set.seed(700)
-x.coord <- round(runif(n1,0,10),9)   # X coordinate
-y.coord <- round(runif(n1,0,10),9)   # Y coordinate
-coordenadas <- cbind(x.coord,y.coord) # Cartesian coordinates without repetitions
+# Initial parameter values
+beta <- c(-1,1.50)
+phi <- 5;     rho <- 0.45
+tau2 <- 0.80; sigma2 <- 1.5
+n1 <- 5    # Number of spatial locations
+n2 <- 5    # Number of temporal index
+set.seed(1000)
+x.coord <- round(runif(n1,0,10),9)    # X coordinate
+y.coord <- round(runif(n1,0,10),9)    # Y coordinate
+coord  <- cbind(x.coord,y.coord)      # Cartesian coordinates without repetitions
 coord2 <- cbind(rep(x.coord,each=n2),rep(y.coord,each=n2)) # Cartesian coordinates with repetitions
-time <- as.matrix(seq(1,n2,1))      # Time index without repetitions
-time2 <- as.matrix(rep(time,n1))    # Time index with repetitions
+time <- as.matrix(seq(1,n2))          # Time index without repetitions
+time2 <- as.matrix(rep(time,n1))      # Time index with repetitions
 x1 <- rexp(n1*n2,2)
 x2 <- rnorm(n1*n2,2,1)
-x <- cbind(x1,x2)
+x  <- cbind(x1,x2)
 media <- x\%*\%beta
 # Covariance matrix
-H <- as.matrix(dist(coordenadas)) # Spatial distances
-Mt <- as.matrix(dist(time))       # Temporal distances
-Cov <- CovarianceM(phi,rho,tau2,sigma2,distSpa=H,disTemp=Mt,kappa=0,type.S="exponential")
+Ms  <- as.matrix(dist(coord))   # Spatial distances
+Mt  <- as.matrix(dist(time))    # Temporal distances
+Cov <- CovarianceM(phi,rho,tau2,sigma2,Ms,Mt,1.5,"matern")
 # Data
 require(mvtnorm)
 y <- as.vector(rmvnorm(1,mean=as.vector(media),sigma=Cov))
-perc <- 0.2
-aa=sort(y);  bb=aa[1:(perc*n1*n2)];  cutof<-bb[perc*n1*n2]
-cc=matrix(1,(n1*n2),1)*(y<=cutof)
+perc <- 0.20
+aa <- sort(y); bb <- aa[1:(perc*n1*n2)]; cutof <- bb[perc*n1*n2]
+cc <- matrix(1,(n1*n2),1)*(y<=cutof)
 y[cc==1] <- cutof
-# Estimation
-est_teste <- EstStempCens(y, x, cc, time2, coord2, inits.phi=3.5, inits.rho=0.5, inits.tau2=0.7,
-                          type.Data="balanced", cens.type="left", method="nlminb", kappa=0,
-                          type.S="exponential",
-                          IMatrix=TRUE, lower.lim=c(0.01,-0.99,0.01), upper.lim=c(30,0.99,20), M=20,
-                          perc=0.25, MaxIter=25, pc=0.2, error = 10^-6)
+LI <- y; LI[cc==1] <- -Inf    # Left-censored
+LS <- y
 
-\dontrun{
-# New York data
-library(spTimer)
-library(sp)
-library(rgdal)
-# Transform coordinates
-station <- as.data.frame(NYdata[,2:3])
-names(station) <- c("lon","lat")
-coordinates(station) <- ~lon+lat
-proj4string(station) <- CRS("+init=epsg:32116 +proj=longlat +datum=NAD83 +no_defs
-                             +ellps=GRS80 +towgs84=0,0,0")
-station2 <- spTransform(station,CRS("+proj=utm +zone=18 +north +datum=NAD83"))
-station <- as.data.frame(station2)
-names(station) <- c("x.Coord","y.Coord")
-NYdata <- cbind(NYdata,station)
-coord <- unique(station)
-EstEstimation <- c(1,2,3,5,6,7,8,9,11,12,13,14,15,16,17,18,19,20,22,23,24,26,27,28)
-EstEstimation <- coord[EstEstimation,]
-dataEstimation <- NYdata[(NYdata[,11]\%in\%EstEstimation[,1])&(NYdata[,12]\%in\%EstEstimation[,2]),]
-cc <- vector("numeric",length=nrow(dataEstimation))
-cc[is.na(dataEstimation$o8hrmax)==1] <- 1
-time <- rep(seq(1,62),nrow(EstEstimation))
-dados <- cbind(dataEstimation,cc,time)
-names(dados) <- c("s.index","Longitude","Latitude","Year","Month","Day","o8hrmax","cMAXTMP",
-                  "WDSP","RH","x.Coord","y.Coord","censure","time")
-# Data
-y     <- dados$o8hrmax
-cc    <- dados$censure
-x     <- as.matrix(cbind(dados$cMAXTMP,dados$WDSP,dados$RH))
-tempo <- as.data.frame(dados$time)
-coord <- as.matrix(cbind(dados$x.Coord/1000,dados$y.Coord/1000)) # Coordinates in Km
-# Power exponential model for the spatial covariance structure
-est <- EstStempCens(y, x, cc, tempo, coord, inits.phi = 50, inits.rho = 0.30, inits.tau2 = 25,
-                    type.Data="balanced", cens.type="missing", method="nlminb", kappa=0.50,
-                    type.S="pow.exp",
-                    IMatrix=TRUE, lower.lim=c(0.01,-0.80,0.01), upper.lim=c(500,0.80,150), M=20,
-                    perc=0.25, MaxIter=500, pc=0.2, error = 10^-5)}
+# Estimation
+est_teste <- EstStempCens(y, x, cc, time2, coord2, LI, LS, init.phi=3.5,
+                 init.rho=0.5, init.tau2=0.7,tau2.fixo=FALSE, kappa=1.5,
+                 type.S="matern", IMatrix=TRUE, M=20, perc=0.25,
+                 MaxIter=300, pc=0.2)}
+
 }
 \author{
-Katherine A. L. Valeriano, Victor H. Lachos and Larissa A. Matos
+Katherine L. Valeriano, Victor H. Lachos and Larissa A. Matos
 }

@@ -17,7 +17,6 @@
 #' @seealso \code{\link{EstStempCens}}
 #'
 #' @examples
-#' \dontrun{
 #' # Initial parameter values
 #' beta <- c(-1,1.50)
 #' phi  <- 5;    rho <- 0.60
@@ -84,7 +83,7 @@
 #' ycoord1 <- c(data.valid$yObs,pre_teste$predValues)
 #' data2 <- data.frame(Model,station,xcoord1,ycoord1)
 #' ggplot(data=data2,aes(x=xcoord1,y=ycoord1)) + geom_line(aes(color=Model)) +
-#' facet_wrap(station~.,nrow=2) + labs(x="",y="") + theme(legend.position="bottom")}
+#' facet_wrap(station~.,nrow=2) + labs(x="",y="") + theme(legend.position="bottom")
 
 PredStempCens = function(Est.StempCens, locPre, timePre, xPre){
 

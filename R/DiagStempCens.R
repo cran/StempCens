@@ -7,13 +7,15 @@ globalVariables(c("x", "y"))
 #' @param type.diag type of diagnostic: '\code{individual}' is related when one observation is deleted,
 #' '\code{time}' is related when an entire time is deleted, '\code{location}' is related when an entire location is deleted and
 #' '\code{all}' the three cases ('\code{individual}', '\code{time}' and '\code{location}').
-#' By default \code{type.diag} is \code{location}.
-#' @param diag.plot \code{TRUE} or \code{FALSE}. It indicates if diagnostic plots must be showed. By default = \code{TRUE}
-#' @param ck The value for \code{ck} considered in the benchmark value for the index plot:
-#' \eqn{mean(GD)+ck*sd(GD)}, where \eqn{GD} is the vector with all values of the diagnostic measure. By default \code{ck}=3.
+#' By default \code{type.diag} is \code{individual}.
+#' @param diag.plot \code{TRUE} or \code{FALSE}. It indicates if diagnostic plots must be showed. By default = \code{TRUE}.
+#' @param ck the value for \code{ck} considered in the benchmark value for the index plot:
+#' \eqn{mean(GD)+ck*sd(GD)}, where \eqn{GD} is the vector with all values of the diagnostic measures.
 #'
 #' @details This function uses the case deletion approach to study the impact of deleting one or
-#' more observations from the dataset on the parameters estimates, using the idea of Cook (1977). The measure is defined by
+#' more observations from the dataset on the parameters estimates, using the ideas of
+#' \insertCite{cook1977detection;textual}{StempCens} and \insertCite{zhu2001case;textual}{StempCens}.
+#' The measure is defined by
 #'
 #' \eqn{GD_i(\theta*)=(\theta* - \theta*[i])'[-Q**(\theta|\theta*)](\theta* - \theta*[i]), i=1,....m,}
 #'
@@ -38,60 +40,68 @@ globalVariables(c("x", "y"))
 #'   }
 #' }
 #'
-#' @author Katherine A. L. Valeriano, Victor H. Lachos and Larissa A. Matos
+#' @author Katherine L. Valeriano, Victor H. Lachos and Larissa A. Matos
 #'
 #' @seealso \code{\link{EstStempCens}}
 #'
 #' @examples
+#' \dontrun{
 #' # Initial parameter values
-#' beta <- c(-1,1.5); phi <- 3; rho <- 0.40; tau2 <- 1; sigma2 <- 2
+#' beta <- c(-1,1.5)
+#' phi <- 3;   rho <- 0.40
+#' tau2 <- 1;  sigma2 <- 2
 #' # Simulating data
-#' n1 <- 8    # Number of spatial locations
-#' n2 <- 4    # Number of temporal index
-#' set.seed(700)
-#' x.coord <- round(runif(n1,0,10),9)   # X coordinate
-#' y.coord <- round(runif(n1,0,10),9)   # Y coordinate
-#' coordenadas <- cbind(x.coord,y.coord) # Cartesian coordinates without repetitions
-#' coord2 <- cbind(rep(x.coord,each=n2),rep(y.coord,each=n2)) # Cartesian coordinates with repetitions
-#' time <- as.matrix(seq(1,n2,1))   # Time index without repetitions
-#' time2 <- as.matrix(rep(time,n1)) # Time index with repetitions
+#' n1 <- 5    # Number of spatial locations
+#' n2 <- 5    # Number of temporal index
+#' set.seed(98765)
+#' x.co <- round(runif(n1,0,10),9)   # X coordinate
+#' y.co <- round(runif(n1,0,10),9)   # Y coordinate
+#' coord <- cbind(x.co,y.co)         # Cartesian coordinates without repetitions
+#' coord2 <- cbind(rep(x.co,each=n2),rep(y.co,each=n2)) # Cartesian coordinates with repetitions
+#' time <- as.matrix(seq(1,n2))      # Time index without repetitions
+#' time2 <- as.matrix(rep(time,n1))  # Time index with repetitions
 #' x1 <- rexp(n1*n2,2)
 #' x2 <- rnorm(n1*n2,2,1)
-#' x <- cbind(x1,x2)
+#' x  <- cbind(x1,x2)
 #' media <- x%*%beta
 #' # Covariance matrix
-#' H <- as.matrix(dist(coordenadas)) # Spatial distances
-#' Mt <- as.matrix(dist(time))       # Temporal distances
-#' Cov <- CovarianceM(phi,rho,tau2,sigma2,distSpa=H,disTemp=Mt,kappa=0,type.S="gaussian")
+#' Ms  <- as.matrix(dist(coord))  # Spatial distances
+#' Mt  <- as.matrix(dist(time))   # Temporal distances
+#' Cov <- CovarianceM(phi,rho,tau2,sigma2,Ms,Mt,0,"exponential")
 #' # Data
 #' require(mvtnorm)
 #' y <- as.vector(rmvnorm(1,mean=as.vector(media),sigma=Cov))
-#' perc <- 0.1
-#' aa=sort(y);  bb=aa[1:(perc*n1*n2)];  cutof<-bb[perc*n1*n2]
-#' cc=matrix(1,(n1*n2),1)*(y<=cutof)
+#' perc <- 0.20
+#' aa <- sort(y); bb <- aa[((1-perc)*n1*n2+1):(n1*n2)]; cutof <- bb[1]
+#' cc <- matrix(1,(n1*n2),1)*(y>=cutof)
 #' y[cc==1] <- cutof
 #' y[17] <- abs(y[17])+2*sd(y)
+#' LI <- y
+#' LS <- y; LS[cc==1] <- Inf    # Right-censored
+#'
 #' # Estimation
-#' est <- EstStempCens(y, x, cc, time2, coord2, inits.phi=2.5, inits.rho=0.5, inits.tau2=0.8,
-#'                     type.Data="balanced", cens.type="left", method="nlminb", kappa=0,
-#'                     type.S="gaussian",
-#'                     IMatrix=TRUE, lower.lim=c(0.01,-0.99,0.01), upper.lim=c(30,0.99,20), M=20,
-#'                     perc=0.25, MaxIter=10, pc=0.2, error = 10^-6)
+#' set.seed(74689)
+#' est <- EstStempCens(y, x, cc, time2, coord2, LI, LS, init.phi=2.5, init.rho=0.5, init.tau2=0.8,
+#'           type.Data="balanced", method="nlminb", kappa=0, type.S="exponential",
+#'           IMatrix=TRUE, lower.lim=c(0.01,-0.99,0.01), upper.lim=c(30,0.99,20), M=20,
+#'           perc=0.25, MaxIter=300, pc=0.20)
+#'
 #' # Diagnostic
-#' diag <- DiagStempCens(est, type.diag="time", diag.plot = TRUE, ck=1)
+#' set.seed(12345)
+#' diag <- DiagStempCens(est, type.diag="time", diag.plot = TRUE, ck=1)}
 
-DiagStempCens = function(Est.StempCens, type.diag="individual", diag.plot = TRUE, ck=3){
+DiagStempCens = function(Est.StempCens, type.diag="individual", diag.plot=TRUE, ck){
 
-  if(class(Est.StempCens)!="Est.StempCens"){stop("an object of the class Est.StempCens must be provided")}
+  if(class(Est.StempCens)!="Est.StempCens"){stop("An object of the class Est.StempCens must be provided")}
 
   if(!is.logical(diag.plot)) stop("diag.plot must be TRUE or FALSE")
 
   if(type.diag!="all" & type.diag!="time" & type.diag!="individual" & type.diag!="location"){
-    stop("type.diag must be all, time, individual or location")
-  }
+    stop("type.diag must be all, time, individual or location")}
 
-  if(!is.numeric(ck)) stop("the constant ck must be a real number in [0,Inf)")
-  if(ck<0) stop("the constant ck must be a real number in [0,Inf)")
+  if(!is.numeric(ck)) stop("The constant ck must be a real number in [0,Inf)")
+
+  if(ck<0) stop("The constant ck must be a real number in [0,Inf)")
 
   #---------------------------------------------------------------------#
   #                                Outputs                              #
@@ -107,7 +117,7 @@ DiagStempCens = function(Est.StempCens, type.diag="individual", diag.plot = TRUE
       geom_point(colour="gray20",size=1.5) +
       labs(x=paste("Index",type.diag),y=expression(GD[i])) +
       geom_line(y=line,colour="gray40",linetype="dotted") +
-      geom_text(aes(label=ifelse(GD$y>line,rownames(GD),'')), size=3, vjust=2)
+      geom_text(aes(label=ifelse(y>line,rownames(GD),'')), size=3, vjust=2)
 
     #out.diag <- list(GD = GD, plotGD = GD1)
     out.diag <- list(GD = GD)
@@ -135,21 +145,21 @@ DiagStempCens = function(Est.StempCens, type.diag="individual", diag.plot = TRUE
       geom_point(colour="gray20",size=1.5) +
       labs(x="Index individual",y=expression(GD[i])) +
       geom_line(y=line1,colour="gray40",linetype="dotted") +
-      geom_text(aes(label=ifelse(GD_1$y>line1,rownames(GD_1),'')), size=3, vjust=2)
+      geom_text(aes(label=ifelse(y>line1,rownames(GD_1),'')), size=3, vjust=2)
     GD_2 = data.frame(x=seq(1,dim(GDm_2)[1]),y=GDm_2[,dim(GDm_2)[2]])
     line2 <- mean(GD_2$y)+ck*sd(GD_2$y)
     GD2 <- ggplot(aes(x=x,y=y),data=GD_2) +
       geom_point(colour="gray20",size=1.5) +
       labs(x="Index time",y=expression(GD[i])) +
       geom_line(y=line2,colour="gray40",linetype="dotted") +
-      geom_text(aes(label=ifelse(GD_2$y>line2,rownames(GD_2),'')), size=3, vjust=2)
+      geom_text(aes(label=ifelse(y>line2,rownames(GD_2),'')), size=3, vjust=2)
     GD_3 = data.frame(x=seq(1,dim(GDm_3)[1]),y=GDm_3[,dim(GDm_3)[2]])
     line3 <- mean(GD_3$y)+ck*sd(GD_3$y)
     GD3 <- ggplot(aes(x=x,y=y),data=GD_3) +
       geom_point(colour="gray20",size=1.5) +
       labs(x="Index location",y=expression(GD[i])) +
       geom_line(y=line3,colour="gray40",linetype="dotted") +
-      geom_text(aes(label=ifelse(GD_3$y>line3,rownames(GD_3),'')), size=3, vjust=2)
+      geom_text(aes(label=ifelse(y>line3,rownames(GD_3),'')), size=3, vjust=2)
 
     out.diag<- list(GDind = GD_1, GDtime = GD_2, GDloc = GD_3)
 
@@ -167,5 +177,3 @@ DiagStempCens = function(Est.StempCens, type.diag="individual", diag.plot = TRUE
   return(out.diag)
 
 }
-
-

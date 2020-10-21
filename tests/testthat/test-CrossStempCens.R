@@ -18,7 +18,6 @@
 #' @seealso \code{\link{EstStempCens}}, \code{\link{PredStempCens}}
 #'
 #' @examples
-#' \dontrun{
 #' # Initial parameter values
 #' beta <- c(-1,1.50)
 #' phi <- 5;     rho <- 0.6
@@ -81,7 +80,7 @@
 #'
 #' # Cross-validation
 #' cross_teste <- CrossStempCens(pre_teste,data.valid$yObs)
-#' cross_teste$Mspe # MSPE}
+#' cross_teste$Mspe # MSPE
 
 CrossStempCens = function(Pred.StempCens, yObs.pre){
 
