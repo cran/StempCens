@@ -1,12 +1,20 @@
 
-### News for Package StempCens
+# News for Package StempCens
 
-<font color='grey'>**Changes in StempCens version 1.1.0**</font>
+### StempCens version 0.1.0
+
+* Initial release.
+
+
+### StempCens version 1.1.0
 
 * New function `EffectiveRange`, it computes the effective range for an isotropic spatial correlation function.
 
 * The `EstStempCens` function allows to consider interval censoring by specifying the limit of detection (LOD).
 
-<font color='grey'>**Changes in StempCens version 0.1.0**</font>
 
-* Initial release.
+### StempCens version 1.2.0
+
+* Corrects the errors generated in the `EstStempCens` function due to the use of the `class` function.
+
+* New function `rStempCens` for censored spatio-temporal data simulation.

@@ -35,21 +35,22 @@ per location. To compute the spatial correlation it provides 5 functions: expone
 spherical and power exponential. To compute the temporal correlation is used an autocorrelation function of an AR(1) process.
 }
 \examples{
-# Initial parameter values
-phi <- 5;     rho <- 0.45
-tau2 <- 0.80; sigma2 <- 2
-# Simulating data
-n1 <- 10   # Number of spatial locations
-n2 <- 5    # Number of temporal index
 set.seed(1000)
-x.co <- round(runif(n1,0,10),5)  # X coordinate
-y.co <- round(runif(n1,0,10),5)  # Y coordinate
-coord <- cbind(x.co,y.co)        # Cartesian coordinates without repetitions
-time <- as.matrix(seq(1,n2))     # Time index without repetitions
+# Parameter values
+phi  <- 5
+rho  <- 0.45
+tau2 <- 0.80
+sigma2 <- 2
+
+# Coordinates and time points
+coords <- matrix(runif(20, 0, 10), ncol=2) # Cartesian coordinates without repetitions
+time   <- as.matrix(1:5)   # Time index without repetitions
+Ms <- as.matrix(dist(coords)) # Spatial distances
+Mt <- as.matrix(dist(time))   # Temporal distances
+
 # Covariance matrix
-Ms <- as.matrix(dist(coord))     # Spatial distances
-Mt <- as.matrix(dist(time))      # Temporal distances
-Cov <- CovarianceM(phi,rho,tau2,sigma2,distSpa=Ms,disTemp=Mt,kappa=0,type.S="exponential")
+Cov <- CovarianceM(phi, rho, tau2, sigma2, distSpa=Ms, disTemp=Mt,
+                   kappa=0, type.S="exponential")
 }
 \author{
 Katherine L. Valeriano, Victor H. Lachos and Larissa A. Matos

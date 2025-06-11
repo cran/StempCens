@@ -4,31 +4,11 @@
 \alias{EstStempCens}
 \title{ML estimation in spatio-temporal model with censored/missing responses}
 \usage{
-EstStempCens(
-  y,
-  x,
-  cc,
-  time,
-  coord,
-  LI,
-  LS,
-  init.phi,
-  init.rho,
-  init.tau2,
-  tau2.fixo = FALSE,
-  type.Data = "balanced",
-  method = "nlminb",
-  kappa = 0,
-  type.S = "exponential",
-  IMatrix = TRUE,
-  lower.lim = c(0.01, -0.99, 0.01),
-  upper.lim = c(30, 0.99, 20),
-  M = 20,
-  perc = 0.25,
-  MaxIter = 300,
-  pc = 0.2,
-  error = 1e-06
-)
+EstStempCens(y, x, cc, time, coord, LI, LS, init.phi, init.rho, init.tau2,
+  tau2.fixo = FALSE, type.Data = "balanced", method = "nlminb",
+  kappa = 0, type.S = "exponential", IMatrix = TRUE,
+  lower.lim = c(0.01, -0.99, 0.01), upper.lim = c(30, 0.99, 20), M = 20,
+  perc = 0.25, MaxIter = 300, pc = 0.2, error = 1e-06)
 }
 \arguments{
 \item{y}{a vector of responses.}
@@ -149,44 +129,25 @@ and \eqn{X} has full rank.
 The estimation process was computed via SAEM algorithm initially proposed by \insertCite{delyon1999convergence;textual}{StempCens}.
 }
 \examples{
-\dontrun{
-# Simulating data
+\donttest{
+set.seed(12345)
 # Initial parameter values
 beta <- c(-1,1.50)
-phi <- 5;     rho <- 0.45
-tau2 <- 0.80; sigma2 <- 1.5
-n1 <- 5    # Number of spatial locations
-n2 <- 5    # Number of temporal index
-set.seed(1000)
-x.coord <- round(runif(n1,0,10),9)    # X coordinate
-y.coord <- round(runif(n1,0,10),9)    # Y coordinate
-coord  <- cbind(x.coord,y.coord)      # Cartesian coordinates without repetitions
-coord2 <- cbind(rep(x.coord,each=n2),rep(y.coord,each=n2)) # Cartesian coordinates with repetitions
-time <- as.matrix(seq(1,n2))          # Time index without repetitions
-time2 <- as.matrix(rep(time,n1))      # Time index with repetitions
-x1 <- rexp(n1*n2,2)
-x2 <- rnorm(n1*n2,2,1)
-x  <- cbind(x1,x2)
-media <- x\%*\%beta
-# Covariance matrix
-Ms  <- as.matrix(dist(coord))   # Spatial distances
-Mt  <- as.matrix(dist(time))    # Temporal distances
-Cov <- CovarianceM(phi,rho,tau2,sigma2,Ms,Mt,1.5,"matern")
-# Data
-require(mvtnorm)
-y <- as.vector(rmvnorm(1,mean=as.vector(media),sigma=Cov))
-perc <- 0.20
-aa <- sort(y); bb <- aa[1:(perc*n1*n2)]; cutof <- bb[perc*n1*n2]
-cc <- matrix(1,(n1*n2),1)*(y<=cutof)
-y[cc==1] <- cutof
-LI <- y; LI[cc==1] <- -Inf    # Left-censored
-LS <- y
-
+phi  <- 5
+rho  <- 0.45
+tau2 <- 0.80
+sigma2 <- 1.5
+coord <- matrix(runif(10, 0, 10), ncol=2)
+time  <- matrix(1:5, ncol=1)
+x     <- cbind(rexp(25,2), rnorm(25,2,1))
+# Data simulation
+data  <- rnStempCens(x, time, coord, beta, phi, rho, tau2, sigma2,
+                     type.S="matern", kappa=1.5, cens="left", pcens=0.20)
 # Estimation
-est_teste <- EstStempCens(y, x, cc, time2, coord2, LI, LS, init.phi=3.5,
-                 init.rho=0.5, init.tau2=0.7,tau2.fixo=FALSE, kappa=1.5,
-                 type.S="matern", IMatrix=TRUE, M=20, perc=0.25,
-                 MaxIter=300, pc=0.2)}
+est_teste <- EstStempCens(data$yObs, x, data$ci, data$time, cbind(data$x.coord, data$y.coord),
+                          data$lcl, data$ucl, init.phi=3.5, init.rho=0.5, init.tau2=0.7,
+                          tau2.fixo=FALSE, kappa=1.5, type.S="matern", IMatrix=TRUE, M=20,
+                          perc=0.25, MaxIter=300, pc=0.2)}
 
 }
 \author{

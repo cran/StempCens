@@ -6,6 +6,33 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
+// crossdist
+arma::mat crossdist(arma::mat m1);
+RcppExport SEXP _StempCens_crossdist(SEXP m1SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type m1(m1SEXP);
+    rcpp_result_gen = Rcpp::wrap(crossdist(m1));
+    return rcpp_result_gen;
+END_RCPP
+}
+// crossdist2
+arma::mat crossdist2(arma::vec m1);
+RcppExport SEXP _StempCens_crossdist2(SEXP m1SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type m1(m1SEXP);
+    rcpp_result_gen = Rcpp::wrap(crossdist2(m1));
+    return rcpp_result_gen;
+END_RCPP
+}
 // inversa
 arma::mat inversa(arma::mat M);
 RcppExport SEXP _StempCens_inversa(SEXP MSEXP) {
@@ -76,6 +103,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_StempCens_crossdist", (DL_FUNC) &_StempCens_crossdist, 1},
+    {"_StempCens_crossdist2", (DL_FUNC) &_StempCens_crossdist2, 1},
     {"_StempCens_inversa", (DL_FUNC) &_StempCens_inversa, 1},
     {"_StempCens_DevCorMatrix", (DL_FUNC) &_StempCens_DevCorMatrix, 4},
     {"_StempCens_ScoreVector", (DL_FUNC) &_StempCens_ScoreVector, 10},

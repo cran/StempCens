@@ -96,54 +96,35 @@
 #' @author Katherine L. Valeriano, Victor H. Lachos and Larissa A. Matos
 #'
 #' @examples
-#' \dontrun{
-#' # Simulating data
+#' \donttest{
+#' set.seed(12345)
 #' # Initial parameter values
 #' beta <- c(-1,1.50)
-#' phi <- 5;     rho <- 0.45
-#' tau2 <- 0.80; sigma2 <- 1.5
-#' n1 <- 5    # Number of spatial locations
-#' n2 <- 5    # Number of temporal index
-#' set.seed(1000)
-#' x.coord <- round(runif(n1,0,10),9)    # X coordinate
-#' y.coord <- round(runif(n1,0,10),9)    # Y coordinate
-#' coord  <- cbind(x.coord,y.coord)      # Cartesian coordinates without repetitions
-#' coord2 <- cbind(rep(x.coord,each=n2),rep(y.coord,each=n2)) # Cartesian coordinates with repetitions
-#' time <- as.matrix(seq(1,n2))          # Time index without repetitions
-#' time2 <- as.matrix(rep(time,n1))      # Time index with repetitions
-#' x1 <- rexp(n1*n2,2)
-#' x2 <- rnorm(n1*n2,2,1)
-#' x  <- cbind(x1,x2)
-#' media <- x%*%beta
-#' # Covariance matrix
-#' Ms  <- as.matrix(dist(coord))   # Spatial distances
-#' Mt  <- as.matrix(dist(time))    # Temporal distances
-#' Cov <- CovarianceM(phi,rho,tau2,sigma2,Ms,Mt,1.5,"matern")
-#' # Data
-#' require(mvtnorm)
-#' y <- as.vector(rmvnorm(1,mean=as.vector(media),sigma=Cov))
-#' perc <- 0.20
-#' aa <- sort(y); bb <- aa[1:(perc*n1*n2)]; cutof <- bb[perc*n1*n2]
-#' cc <- matrix(1,(n1*n2),1)*(y<=cutof)
-#' y[cc==1] <- cutof
-#' LI <- y; LI[cc==1] <- -Inf    # Left-censored
-#' LS <- y
-#'
+#' phi  <- 5
+#' rho  <- 0.45
+#' tau2 <- 0.80
+#' sigma2 <- 1.5
+#' coord <- matrix(runif(10, 0, 10), ncol=2)
+#' time  <- matrix(1:5, ncol=1)
+#' x     <- cbind(rexp(25,2), rnorm(25,2,1))
+#' # Data simulation
+#' data  <- rnStempCens(x, time, coord, beta, phi, rho, tau2, sigma2,
+#'                      type.S="matern", kappa=1.5, cens="left", pcens=0.20)
 #' # Estimation
-#' est_teste <- EstStempCens(y, x, cc, time2, coord2, LI, LS, init.phi=3.5,
-#'                  init.rho=0.5, init.tau2=0.7,tau2.fixo=FALSE, kappa=1.5,
-#'                  type.S="matern", IMatrix=TRUE, M=20, perc=0.25,
-#'                  MaxIter=300, pc=0.2)}
+#' est_teste <- EstStempCens(data$yObs, x, data$ci, data$time, cbind(data$x.coord, data$y.coord),
+#'                           data$lcl, data$ucl, init.phi=3.5, init.rho=0.5, init.tau2=0.7,
+#'                           tau2.fixo=FALSE, kappa=1.5, type.S="matern", IMatrix=TRUE, M=20,
+#'                           perc=0.25, MaxIter=300, pc=0.2)}
 #'
 #' @import mvtnorm
 #' @importFrom tmvtnorm rtmvnorm
 #' @importFrom MCMCglmm rtnorm
-#' @importFrom distances distances
 #' @importFrom ggplot2 ggplot aes geom_point labs geom_line geom_text
 #' @importFrom grid pushViewport viewport grid.layout
 #' @importFrom stats dnorm nlminb optim optimize sd dist uniroot
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @importFrom Rdpack reprompt
+#' @importFrom stats quantile
 #'
 #' @export CovarianceM
 #' @export EstStempCens
@@ -151,6 +132,7 @@
 #' @export PredStempCens
 #' @export CrossStempCens
 #' @export EffectiveRange
+#' @export rnStempCens
 
 EstStempCens = function(y,x,cc,time,coord,LI,LS,init.phi,init.rho,init.tau2,tau2.fixo=FALSE,
                         type.Data="balanced",method="nlminb",kappa=0,type.S="exponential",
@@ -160,33 +142,28 @@ EstStempCens = function(y,x,cc,time,coord,LI,LS,init.phi,init.rho,init.tau2,tau2
   #---------------------------------------------------------------------#
   #                              Validations                            #
   #---------------------------------------------------------------------#
-  tempo <- time
+  tempo <- as.data.frame(time)
   ly <- length(y)
 
-  if (class(coord)!="matrix" & class(coord)!="data.frame") stop("coord must be a matrix or data.frame")
+  if (!inherits(coord, c("matrix", "data.frame"))) stop("coord must be a matrix or data.frame")
 
-  if (class(x)!="matrix") stop("x must be a matrix")
+  if (!inherits(x, "matrix")) stop("x must be a matrix")
 
-  if (class(tempo)!="matrix" & class(tempo)!="data.frame") stop("time must be a matrix or data.frame")
+  if (!inherits(tempo, "matrix") & !inherits(tempo, "data.frame")) stop("time must be a matrix or data.frame")
 
   if (nrow(x)!=ly) stop("Number of rows in x is different to the number of observations in y")
 
   if (length(cc)!=ly) stop("Length of censored vector (cc) different to the length of y")
 
   if (nrow(tempo)!=ly) stop("Number of elements in time vector is different to the number of observations in y")
-
   if (nrow(coord)!=ly|ncol(coord)!=2) stop("Dimension of coordinate matrix is non-confortable")
 
   if (length(LI)!=ly) stop("Number of elements in LI is different to the number of observations in y")
-
   if (length(LS)!=ly) stop("Number of elements in LS is different to the number of observations in y")
-
   if (sum(LI > LS)>0) stop("LI must be lower or equal than LS")
 
   if (init.phi <= 0) stop("The spatial parameter can not be negative or equal to zero")
-
   if (init.rho > 1 | init.rho < (-1)) stop("The time scaling parameter can not be >1 or < -1")
-
   if (init.tau2 < 0) stop("The nugget effect can not be negative")
 
   if(!is.logical(tau2.fixo) | !is.logical(IMatrix)) stop("Parameters tau2.fixo and IMatrix must be logical (TRUE/FALSE) variables")
@@ -204,27 +181,27 @@ EstStempCens = function(y,x,cc,time,coord,LI,LS,init.phi,init.rho,init.tau2,tau2
     if(upper.lim[2]<=lower.lim[2] | lower.lim[2]<(-1) | upper.lim[2]>1) stop("non-confortable values to the limits of the temporal parameter")
   }
 
-  if (method!="optim" & method!="nlminb") stop('method should be one of optim, nlminb')
+  if (!method%in%c("optim","nlminb")) stop('method should be one of optim, nlminb')
 
-  if (type.Data!="balanced" & type.Data!="unbalanced") stop('type.Data should be one of balanced, unbalanced')
+  if (!type.Data%in%c("balanced","unbalanced")) stop('type.Data should be one of balanced, unbalanced')
+  if (type.Data=="balanced"){
+    n1 = length(unique(tempo))
+    n2 = nrow(unique(cbind(coord)))
+    if (nrow(x) == n1*n2) stop("Non-conformable dimensions in the input for balanced data")
+  }
 
-  if (type.S!="matern" & type.S !="gaussian" & type.S != "spherical" & type.S != "pow.exp" & type.S != "exponential"){
+  if (!type.S%in%c("matern","gaussian","spherical","pow.exp","exponential")){
     stop('type.S should be one of matern, gaussian, spherical, pow.exp, exponential')}
 
   if (type.S=="pow.exp" & (kappa > 2| kappa<=0)) stop("kappa must be a real in (0,2]")
-
   if (type.S=="matern" & kappa <= 0) stop("kappa must be a real number in (0,Inf)")
 
   if (perc > 1 | perc<=0) stop("Invalid value for perc")
-
   if (pc > 1 | pc<=0) stop("Invalid value for pc")
 
   # Validation, arguments support of the function
-
   if(MaxIter <= 0 | MaxIter%%1 != 0) stop("MaxIter must be a positive integer")
-
   if(M <= 0 | M%%1 != 0) stop("M must be a positive integer")
-
   if(error <=0 | error > 1) stop("error must belong to the interval (0,1]")
 
 

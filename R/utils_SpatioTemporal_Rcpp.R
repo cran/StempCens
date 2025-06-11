@@ -360,10 +360,10 @@ amostradordegibbs <- function(M1, M0, cc1, y1, media, Gama, LI, LS){
   } # End if. One observation is non-censored
 
   if(sum(cc1)>1 & sum(cc1)<(nj-1)){
-      InvPsioo <- inversa(Gama[cc1==0,cc1==0])
+      InvPsioo <- inversa(Gama[cc1==0, cc1==0])
       t1[cc1==0] <- y1[cc1==0]
 
-      muc <- matrix(gammai[cc1==1],ncol=1) + Gama[cc1==1,cc1==0]%*%InvPsioo%*%(y1[cc1==0] - gammai[cc1==0])
+      muc <- matrix(gammai[cc1==1],ncol=1) + Gama[cc1==1,cc1==0]%*%InvPsioo%*%matrix(y1[cc1==0] - gammai[cc1==0], ncol=1)
       muc <- as.vector(muc)
       Sc <- Gama[cc1==1,cc1==1] - Gama[cc1==1,cc1==0]%*%InvPsioo%*%Gama[cc1==0,cc1==1]
       Sc <- (Sc + t(Sc))/2 # Correct rounding problems
@@ -409,8 +409,8 @@ saemST <- function(y,x,cc,tempo,coord,LI,LS,init.phi,init.rho,init.tau2,tau2.fix
   # Covariance matrix
   vec <- as.matrix(unique(cbind(coord)))              # Matrix of unique coordinates (without repetitions)
   tiempo <- as.matrix(sort(as.matrix(unique(tempo)))) # Vector of unique times index (without repetitions)
-  MDist <- as.matrix(distances(vec))                  # Distance matrix of spatial coordinates (without coordinates repetitions)
-  disTem <- as.matrix(distances(tiempo))              # Distance matrix of temporal index (without repetitions)
+  MDist  <- crossdist(vec)     # Distance matrix of spatial coordinates (without coordinates repetitions)
+  disTem <- crossdist2(tiempo) # Distance matrix of temporal index (without repetitions)
 
   if (type.Data=="balanced"){
     eliminar <- NULL
@@ -662,7 +662,7 @@ PredictNewValues <- function(modelo,loc.Pre,time.Pre,x.pre){
 
   # Data
     time.Pre <- as.matrix(time.Pre)
-    loc.Obs <- modelo$m.data$coord
+    loc.Obs  <- modelo$m.data$coord
     time.Obs <- as.matrix(modelo$m.data$time)
     y.obs <- modelo$m.results$SAEMy      # y (estimated in the case of censored observations)
     x.obs <- modelo$m.data$x
@@ -673,16 +673,16 @@ PredictNewValues <- function(modelo,loc.Pre,time.Pre,x.pre){
     bet.est <- modelo$m.results$beta    # Beta estimated
     p <- length(bet.est) # Number of beta parameters
 
-    H1 <- as.matrix(distances(loc.Pre))   # Spatial distances for the new locations
-    T1 <- as.matrix(distances(time.Pre))  # Time distances for the new observations
+    H1 <- crossdist(loc.Pre)   # Spatial distances for the new locations
+    T1 <- crossdist2(time.Pre) # Time distances for the new observations
     CorrH1 <- CorrSpatial(H1, phi.est, modelo$m.data$kappa, modelo$m.data$type.S) # Spatial Correlation
     CorrT1 <-  CorrTemporal(T1, rho.est) # Temporal correlation
     sigma.pp <- sig.est*(CorrH1*CorrT1) + tau.est*diag(ncol(H1)) # Spatio-temporal covariance matrix
 
     np <- nrow(loc.Pre)
     no <- nrow(loc.Obs)
-    H2 <- as.matrix(distances(rbind(loc.Pre,loc.Obs)))[1:np,(np+1):(np+no)]
-    T2 <- as.matrix(distances(rbind(time.Pre,time.Obs)))[1:np,(np+1):(np+no)]
+    H2 <- crossdist(as.matrix(rbind(loc.Pre,loc.Obs)))[1:np,(np+1):(np+no)]
+    T2 <- crossdist2(rbind(time.Pre,time.Obs))[1:np,(np+1):(np+no)]
     CorrH2 <- CorrSpatial(H2, phi.est, modelo$m.data$kappa, modelo$m.data$type.S)
     CorrT2 <-  CorrTemporal(T2, rho.est)
     sigma.po <- sig.est*(CorrH2*CorrT2)  # Spatio-temporal covariance between the new space-time indexes and the space-time indexes used in the estimation process
@@ -794,3 +794,79 @@ GlobalInf <- function(model, type){
 ################################################################################
 
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+
+
+################################################################################
+## Simulation of spatio-temporal data (with censored responses) ##
+################################################################################
+
+randomStempCens = function(x, time, coords, beta, phi, rho, tau2, sigma, kappa, typeS, typeCens, pcens, lod){
+  # Number of spatial and temporal observations
+  n = nrow(coords)
+  t = length(time)
+  coord2 = cbind(rep(coords[,1], each=t), rep(coords[,2], each=t)) # Cartesian coordinates with repetitions
+  time2  = as.matrix(rep(time, n))  # Time index with repetitions
+
+  # Mean
+  media = x%*%beta
+  # Variance-covariance matrix
+  Ms  = crossdist(coords) # Spatial distances
+  Mt  = crossdist2(time)  # Temporal distances
+  Cov = CovM(phi, rho, tau2, sigma, Ms, Mt, kappa, typeS)
+
+  # Simulating dataset
+  y    = as.vector(rmvnorm(1, mean=as.vector(media), sigma=Cov))
+
+  if (pcens==0 & is.null(lod)){
+    data = data.frame(coord2, time2, y, x)
+    names(data) <- c("x.coord", "y.coord", "time", "yObs", paste0("x", 1:ncol(x)))
+  }
+
+  # Adding censoring observations
+  if (pcens>0){
+
+    if (typeCens=="left"){
+      cutoff = quantile(y, pcens)
+      cens   = rep(0, length(y)) + (y<cutoff)
+
+    } else {
+      if (typeCens=="right"){
+        cutoff = quantile(y, 1-pcens)
+        cens   = rep(0, length(y)) + (y>cutoff)
+      }
+    }
+    ycens  = y
+    ycens[cens==1] = cutoff
+    LI = LS = ycens
+    if (typeCens=="left"){ LI[cens==1] = -Inf } else { LS[cens==1] = Inf }
+
+    data = data.frame(coord2, time2, cens, ycens, LI, LS, x)
+    names(data) <- c("x.coord", "y.coord", "time", "ci", "yObs", "lcl", "ucl", paste0("x", 1:ncol(x)))
+
+  } else {
+    if (!is.null(lod)){
+      if (typeCens=="left"){
+        cens   = rep(0, nrow(data)) + (y<lod)
+
+      } else {
+        if (typeCens=="right"){
+          cens   = rep(0, nrow(data)) + (y>lod)
+        }
+      }
+      ycens  = y
+      ycens[cens==1] = lod
+      LI = LS = ycens
+      if (typeCens=="left"){ LI[cens==1] = -Inf } else { LS[cens==1] = Inf }
+
+      data = data.frame(coord2, time2, cens, ycens, LI, LS, x)
+      names(data) <- c("x.coord", "y.coord", "time", "ci", "yObs", "lcl", "ucl", paste0("x", 1:ncol(x)))
+    }
+  }
+  return(data)
+}
+
+
+
+
+
+

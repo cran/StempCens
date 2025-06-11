@@ -46,7 +46,7 @@ EffectiveRange <- function(cor=0.05, phi, kappa=0, Sp.model="exponential"){
 
   if (phi <= 0) stop("The spatial parameter can not be negative or equal to zero")
 
-  if (Sp.model!="matern" & Sp.model !="gaussian" & Sp.model != "spherical" & Sp.model != "pow.exp" & Sp.model != "exponential"){
+  if (!Sp.model %in%c("matern", "gaussian", "spherical", "pow.exp", "exponential")){
     stop('Sp.model should be one of matern, gaussian, spherical, pow.exp, exponential')}
 
   if (Sp.model=="pow.exp" & (kappa > 2| kappa<=0)) stop("kappa must be a real in (0,2]")

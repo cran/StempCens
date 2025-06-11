@@ -45,58 +45,40 @@ globalVariables(c("x", "y"))
 #' @seealso \code{\link{EstStempCens}}
 #'
 #' @examples
-#' \dontrun{
-#' # Initial parameter values
+#' \donttest{
+#' set.seed(12345)
+#' # Parameter values
 #' beta <- c(-1,1.5)
-#' phi <- 3;   rho <- 0.40
-#' tau2 <- 1;  sigma2 <- 2
+#' phi  <- 3
+#' rho  <- 0.40
+#' tau2 <- 1
+#' sigma2 <- 2
+#'
 #' # Simulating data
-#' n1 <- 5    # Number of spatial locations
-#' n2 <- 5    # Number of temporal index
-#' set.seed(98765)
-#' x.co <- round(runif(n1,0,10),9)   # X coordinate
-#' y.co <- round(runif(n1,0,10),9)   # Y coordinate
-#' coord <- cbind(x.co,y.co)         # Cartesian coordinates without repetitions
-#' coord2 <- cbind(rep(x.co,each=n2),rep(y.co,each=n2)) # Cartesian coordinates with repetitions
-#' time <- as.matrix(seq(1,n2))      # Time index without repetitions
-#' time2 <- as.matrix(rep(time,n1))  # Time index with repetitions
-#' x1 <- rexp(n1*n2,2)
-#' x2 <- rnorm(n1*n2,2,1)
-#' x  <- cbind(x1,x2)
-#' media <- x%*%beta
-#' # Covariance matrix
-#' Ms  <- as.matrix(dist(coord))  # Spatial distances
-#' Mt  <- as.matrix(dist(time))   # Temporal distances
-#' Cov <- CovarianceM(phi,rho,tau2,sigma2,Ms,Mt,0,"exponential")
-#' # Data
-#' require(mvtnorm)
-#' y <- as.vector(rmvnorm(1,mean=as.vector(media),sigma=Cov))
-#' perc <- 0.20
-#' aa <- sort(y); bb <- aa[((1-perc)*n1*n2+1):(n1*n2)]; cutof <- bb[1]
-#' cc <- matrix(1,(n1*n2),1)*(y>=cutof)
-#' y[cc==1] <- cutof
-#' y[17] <- abs(y[17])+2*sd(y)
-#' LI <- y
-#' LS <- y; LS[cc==1] <- Inf    # Right-censored
+#' coord <- matrix(runif(10, 0, 10), ncol=2) # Cartesian coordinates without repetitions
+#' time <- as.matrix(1:5) # Time index without repetitions
+#' x    <- cbind(rexp(25,2), rnorm(25,2,1))
+#' data <- rnStempCens(x, time, coord, beta, phi, rho, tau2, sigma2,
+#'                     type.S="exponential", cens="right", pcens=0.20)
+#' data$yObs[17] <- abs(data$yObs[17]) + 2*sd(data$yObs) # perturbed observation
 #'
 #' # Estimation
-#' set.seed(74689)
-#' est <- EstStempCens(y, x, cc, time2, coord2, LI, LS, init.phi=2.5, init.rho=0.5, init.tau2=0.8,
-#'           type.Data="balanced", method="nlminb", kappa=0, type.S="exponential",
-#'           IMatrix=TRUE, lower.lim=c(0.01,-0.99,0.01), upper.lim=c(30,0.99,20), M=20,
-#'           perc=0.25, MaxIter=300, pc=0.20)
-#'
+#' est <- EstStempCens(y=data$yObs, x, cc=data$ci, data$time, cbind(data$x.coord,data$y.coord),
+#'                     LI=data$lcl, LS=data$ucl, init.phi=2.5, init.rho=0.5, init.tau2=0.8,
+#'                     type.Data="balanced", method="nlminb", kappa=0, type.S="exponential",
+#'                     IMatrix=TRUE, lower.lim=c(0.01,-0.99,0.01), upper.lim=c(30,0.99,20), M=20,
+#'                     perc=0.25, MaxIter=300, pc=0.20)
 #' # Diagnostic
 #' set.seed(12345)
 #' diag <- DiagStempCens(est, type.diag="time", diag.plot = TRUE, ck=1)}
 
 DiagStempCens = function(Est.StempCens, type.diag="individual", diag.plot=TRUE, ck){
 
-  if(class(Est.StempCens)!="Est.StempCens"){stop("An object of the class Est.StempCens must be provided")}
+  if(!inherits(Est.StempCens, "Est.StempCens")){stop("An object of the class Est.StempCens must be provided")}
 
   if(!is.logical(diag.plot)) stop("diag.plot must be TRUE or FALSE")
 
-  if(type.diag!="all" & type.diag!="time" & type.diag!="individual" & type.diag!="location"){
+  if(!type.diag%in%c("all","time","individual","location")){
     stop("type.diag must be all, time, individual or location")}
 
   if(!is.numeric(ck)) stop("The constant ck must be a real number in [0,Inf)")
